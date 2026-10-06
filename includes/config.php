@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/error_handler.php';
 
 // Ruta al archivo de configuración
 $configPath = __DIR__ . '/../config/config.json';
@@ -37,6 +38,5 @@ try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 } catch (PDOException $e) {
-    // Acá todavía no decidimos qué hacer con el error - eso lo resolvemos en el próximo paso
-    die('Error de conexión: ' . $e->getMessage());
+    manejarError('Error de conexión a la base de datos: ' . $e->getMessage());
 }
