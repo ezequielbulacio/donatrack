@@ -50,7 +50,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $mensaje = '<div class="alert alert-success">
                 Despacho N° ' . $numeroRemito . ' registrado correctamente.
-            </div>';
+                   <a href="remito.php?id=' . $numeroRemito . '" class="btn btn-sm btn-outline-success ms-2" target="_blank">
+                    Descargar remito PDF
+                </a>
+            </div>';   
 
             $insumos = $pdo->query('SELECT * FROM insumos ORDER BY descripcion')->fetchAll(PDO::FETCH_ASSOC);
         }
