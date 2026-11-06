@@ -16,46 +16,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmtStock->execute([$idInsumo]);
         $insumoActual = $stmtStock->fetch(PDO::FETCH_ASSOC);
 
-        // Validación estricta: ¿hay stock suficiente?
+        // Validación estricta: si no hay stock suficiente, lanzamos una excepción
         if ($cantidad > $insumoActual['cantidad_stock']) {
+            throw new StockInsuficienteException(
+                'Stock insuficiente. Disponible: ' . $insumoActual['cantidad_stock'] . ', solicitado: ' . $cantidad . '.'
+            );
+        }
 
-            $mensaje = '<div class="alert alert-danger">
-                Stock insuficiente. Disponible: ' . $insumoActual['cantidad_stock'] . ', solicitado: ' . $cantidad . '.
-            </div>';
+        $pdo->beginTransaction();
 
+        // 1. Creamos la cabecera del despacho
+        $stmtDespacho = $pdo->prepare(
+            'INSERT INTO despachos (fecha_hora, destino) VALUES (NOW(), ?)'
+        );
+        $stmtDespacho->execute([$destino]);
+        $numeroRemito = $pdo->lastInsertId();
+
+        // 2. Guardamos el detalle (qué insumo, cuánta cantidad)
+        $stmtDetalle = $pdo->prepare(
+            'INSERT INTO detalle_despachos (numero_remito, id_insumo, cantidad) VALUES (?, ?, ?)'
+        );
+        $stmtDetalle->execute([$numeroRemito, $idInsumo, $cantidad]);
+
+        // 3. Restamos del stock
+        $stmtRestar = $pdo->prepare(
+            'UPDATE insumos SET cantidad_stock = cantidad_stock - ? WHERE id_insumo = ?'
+        );
+        $stmtRestar->execute([$cantidad, $idInsumo]);
+
+        $pdo->commit();
+
+        $mensaje = '<div class="alert alert-success">
+            Despacho N° ' . $numeroRemito . ' registrado correctamente.
+            <a href="remito.php?id=' . $numeroRemito . '" class="btn btn-sm btn-outline-success ms-2" target="_blank">
+                Descargar remito PDF
+            </a>
+        </div>';
+
+        $insumos = $pdo->query('SELECT * FROM insumos ORDER BY descripcion')->fetchAll(PDO::FETCH_ASSOC);
+
+    } catch (StockInsuficienteException $e) {
+        // Al usuario siempre se le explica qué pasó
+        $mensaje = '<div class="alert alert-danger">' . htmlspecialchars($e->getMessage()) . '</div>';
+
+        if (APP_ENV === 'PRODUCTION') {
+            // En producción, el evento queda guardado en el log
+            registrarEnLog('Despacho rechazado: ' . $e->getMessage());
         } else {
-
-            $pdo->beginTransaction();
-
-            // 1. Creamos la cabecera del despacho
-            $stmtDespacho = $pdo->prepare(
-                'INSERT INTO despachos (fecha_hora, destino) VALUES (NOW(), ?)'
-            );
-            $stmtDespacho->execute([$destino]);
-            $numeroRemito = $pdo->lastInsertId();
-
-            // 2. Guardamos el detalle (qué insumo, cuánta cantidad)
-            $stmtDetalle = $pdo->prepare(
-                'INSERT INTO detalle_despachos (numero_remito, id_insumo, cantidad) VALUES (?, ?, ?)'
-            );
-            $stmtDetalle->execute([$numeroRemito, $idInsumo, $cantidad]);
-
-            // 3. Restamos del stock
-            $stmtRestar = $pdo->prepare(
-                'UPDATE insumos SET cantidad_stock = cantidad_stock - ? WHERE id_insumo = ?'
-            );
-            $stmtRestar->execute([$cantidad, $idInsumo]);
-
-            $pdo->commit();
-
-            $mensaje = '<div class="alert alert-success">
-                Despacho N° ' . $numeroRemito . ' registrado correctamente.
-                   <a href="remito.php?id=' . $numeroRemito . '" class="btn btn-sm btn-outline-success ms-2" target="_blank">
-                    Descargar remito PDF
-                </a>
-            </div>';   
-
-            $insumos = $pdo->query('SELECT * FROM insumos ORDER BY descripcion')->fetchAll(PDO::FETCH_ASSOC);
+            // En desarrollo/testing, además mostramos la caja de debug
+            $mensaje .= '<div style="background:#f8d7da; border:1px solid #f5c6cb; padding:15px; font-family:monospace;">
+                <strong>DEBUG (' . APP_ENV . '):</strong><br>StockInsuficienteException: ' . htmlspecialchars($e->getMessage()) . '
+            </div>';
         }
 
     } catch (PDOException $e) {

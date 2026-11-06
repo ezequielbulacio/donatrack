@@ -1,6 +1,20 @@
 <?php
 
 /**
+ * Excepción propia: se lanza cuando se intenta despachar más de lo que hay en stock.
+ */
+class StockInsuficienteException extends Exception {}
+
+/**
+ * Guarda un error en el archivo de log, con fecha y hora.
+ */
+function registrarEnLog($mensajeError) {
+    $fechaHora = date('Y-m-d H:i:s');
+    $lineaLog = "[$fechaHora] $mensajeError" . PHP_EOL;
+    file_put_contents(__DIR__ . '/../logs/sistema_error.log', $lineaLog, FILE_APPEND);
+}
+
+/**
  * Maneja un error de forma distinta según el ambiente activo.
  * En PRODUCTION: oculta el detalle técnico y lo guarda en el log.
  * En DEVELOPMENT/TESTING: muestra el detalle técnico en pantalla.
@@ -9,10 +23,8 @@ function manejarError($mensajeError) {
 
     if (APP_ENV === 'PRODUCTION') {
 
-        // 1. Guardamos el error real en el archivo de log, con fecha y hora
-        $fechaHora = date('Y-m-d H:i:s');
-        $lineaLog = "[$fechaHora] $mensajeError" . PHP_EOL;
-        file_put_contents(__DIR__ . '/../logs/sistema_error.log', $lineaLog, FILE_APPEND);
+        // 1. Guardamos el error real en el archivo de log
+        registrarEnLog($mensajeError);
 
         // 2. Mostramos un mensaje amigable al usuario, sin detalles técnicos
         die('Ocurrió un error inesperado. Por favor, intentá más tarde.');
