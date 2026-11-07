@@ -1,0 +1,12 @@
+{
+  "app_name": "Dona-Track ONG",
+  "environment": "DEVELOPMENT",
+  "database": {
+    "host": "localhost",
+    "db_name": "donatrack_db",
+    "user": "root",
+    "password": "",
+    "charset": "utf8mb4"
+  },
+  "log_file": "logs/sistema_error.log"
+}

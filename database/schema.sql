@@ -1,3 +1,6 @@
+CREATE DATABASE IF NOT EXISTS donatrack_db CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE donatrack_db;
+
 CREATE TABLE insumos (
     id_insumo INT AUTO_INCREMENT,
     descripcion VARCHAR(200) NOT NULL,
@@ -6,6 +9,7 @@ CREATE TABLE insumos (
     PRIMARY KEY (id_insumo),
     CHECK (cantidad_stock >= 0)
 );
+
 CREATE TABLE donantes (
     id_donante INT AUTO_INCREMENT,
     nombre_razon_social VARCHAR(150) NOT NULL,
@@ -13,12 +17,14 @@ CREATE TABLE donantes (
     telefono VARCHAR(30),
     PRIMARY KEY (id_donante)
 );
+
 CREATE TABLE despachos (
     numero_remito INT AUTO_INCREMENT,
     fecha_hora DATETIME NOT NULL,
     destino VARCHAR(150) NOT NULL,
     PRIMARY KEY (numero_remito)
 );
+
 CREATE TABLE detalle_despachos (
     id_detalle INT AUTO_INCREMENT,
     numero_remito INT NOT NULL,
@@ -29,6 +35,7 @@ CREATE TABLE detalle_despachos (
     FOREIGN KEY (id_insumo) REFERENCES insumos(id_insumo),
     CHECK (cantidad >= 1)
 );
+
 CREATE TABLE ingresos (
     id_ingreso INT AUTO_INCREMENT,
     id_donante INT NOT NULL,
