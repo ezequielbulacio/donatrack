@@ -1,6 +1,6 @@
 # Dona-Track ONG
 
-Autor: [Bulacio Ezequiel]
+Autor:Bulacio Ezequiel
 Trabajo final para Alumno Libre, Proyecto Informático (UPSO).
 
 ## De qué trata
