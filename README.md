@@ -1,84 +1,66 @@
 # Dona-Track ONG
 
-Plataforma web para la gestión, auditoría y control de stock de suministros y donaciones de una ONG. Trabajo Final para Alumno Libre — Proyecto Informático, UPSO.
+Autor: [Bulacio Ezequiel]
+Trabajo final para Alumno Libre, Proyecto Informático (UPSO).
 
-## Caso de negocio
+## De qué trata
 
-Dona-Track permite registrar insumos donados, controlar el inventario en tiempo real y emitir remitos en PDF cuando los materiales son despachados a centros de ayuda comunitarios.
+Dona-Track es una página web para una ONG que recibe donaciones y las entrega a centros comunitarios. Sirve para anotar lo que llega, ver cuánto stock hay de cada cosa y registrar lo que se entrega, con un remito en PDF.
 
-## Tecnologías
+## Qué usé
 
-- PHP 8 + PDO
-- MySQL
-- Bootstrap 5
-- DomPDF (vía Composer) — generación de remitos en PDF
-- Git / GitHub
+- PHP con PDO y MySQL
+- Bootstrap 5 para el diseño
+- DomPDF (instalado con Composer) para hacer los remitos en PDF
+- Git y GitHub
 
-## Estructura del proyecto
+## Cómo probarlo
 
-```
-donatrack/
-├── config/         → configuración (config.example.json es la plantilla)
-├── database/       → schema.sql (tablas) y datos_prueba.sql (datos de ejemplo)
-├── includes/       → código reutilizable (configuración, errores y logs, header, footer)
-├── logs/           → sistema_error.log (se completa según el ambiente)
-├── public/         → páginas que ve el usuario
-├── composer.json   → dependencias (DomPDF)
-└── vendor/         → librerías instaladas por Composer (no versionado)
-```
+Necesitás XAMPP y Composer.
 
-## Instalación
-
-Requisitos: XAMPP (Apache + MySQL + PHP 8) y Composer.
-
-1. Clonar el repositorio dentro de `htdocs` de XAMPP:
+1. Clonar el repositorio dentro de `htdocs`:
    ```
    git clone https://github.com/ezequielbulacio/donatrack.git
    ```
-2. Instalar las dependencias:
+2. Instalar las librerías:
    ```
    composer install
    ```
-3. Iniciar **Apache** y **MySQL** desde el panel de XAMPP.
-4. Crear el archivo de configuración copiando la plantilla:
+3. Prender Apache y MySQL desde XAMPP.
+4. Copiar el archivo de configuración:
    ```
    copy config\config.example.json config\config.json
    ```
-   Si el usuario o la contraseña de MySQL son distintos de `root` sin contraseña, ajustarlos en `config/config.json`.
-5. En phpMyAdmin, pestaña **SQL**, ejecutar el contenido de `database/schema.sql`. Este script crea la base `donatrack_db` y todas las tablas.
-6. (Opcional) Ejecutar `database/datos_prueba.sql` para cargar donantes e insumos de ejemplo. Sin donantes no se puede registrar un ingreso.
-7. Abrir `http://localhost/donatrack/public/index.php`.
+   Si tu MySQL tiene otra contraseña, cambiala en `config/config.json`.
+5. En phpMyAdmin, ir a la pestaña SQL y ejecutar `database/schema.sql`. Ese archivo crea la base `donatrack_db` y las tablas.
+6. Opcional: ejecutar `database/datos_prueba.sql` para cargar algunos donantes e insumos de ejemplo. Hace falta, porque sin donantes no se puede registrar un ingreso.
+7. Entrar a `http://localhost/donatrack/public/index.php`.
 
-## Ambientes
+## Los tres ambientes
 
-La aplicación reconoce tres ambientes mediante el campo `environment` de `config/config.json`, que se expone en toda la app como la constante `APP_ENV`:
+En `config/config.json` se elige el ambiente (`DEVELOPMENT`, `TESTING` o `PRODUCTION`). Cambia lo que pasa cuando hay un error:
 
-| Ambiente | Comportamiento ante un error |
-|---|---|
-| `DEVELOPMENT` | Muestra el detalle técnico en una caja de debug |
-| `TESTING` | Igual que DEVELOPMENT |
-| `PRODUCTION` | Muestra un mensaje amigable y guarda el error real, con fecha y hora, en `logs/sistema_error.log` |
+- **DEVELOPMENT y TESTING:** el error se muestra en pantalla, en una caja de debug.
+- **PRODUCTION:** el usuario ve un mensaje simple y el error real se guarda, con fecha y hora, en `logs/sistema_error.log`.
 
-## Modelo de datos
+## Base de datos
 
-El enunciado define 3 entidades (Insumos, Donantes, Despachos). Se agregaron 2 tablas intermedias para modelar las relaciones entre ellas sin duplicar información:
+El enunciado pedía tres tablas (insumos, donantes y despachos). Terminé haciendo cinco, porque necesitaba guardar cada movimiento por separado:
 
-- **insumos**: material, categoría y stock actual (con restricción para que nunca sea negativo).
-- **donantes**: nombre o razón social, email único y teléfono.
-- **despachos**: cabecera de cada entrega (número de remito autoincremental, fecha y hora, destino).
-- **detalle_despachos**: qué insumos y qué cantidades incluye cada despacho (un despacho puede tener varios).
-- **ingresos**: cada donación recibida: qué donante entregó qué insumo, en qué cantidad y cuándo.
+- **insumos:** qué material es, su categoría y cuánto stock hay.
+- **donantes:** nombre o razón social, email (no se puede repetir) y teléfono.
+- **despachos:** cada entrega, con su número de remito, fecha y destino.
+- **detalle_despachos:** qué insumos y cuántos van en cada despacho.
+- **ingresos:** cada donación recibida: quién donó, qué y cuánto.
 
-## Funcionalidades
+## Qué se puede hacer
 
-- **Inicio** (`index.php`): accesos directos a las secciones.
-- **Registrar ingreso / donación** (`ingreso.php`): suma stock a un insumo existente o da de alta un insumo nuevo, asociado a un donante. Todo se guarda en una transacción.
-- **Registrar despacho** (`despacho.php`): descuenta stock y valida de forma estricta que haya suficiente antes de confirmar. Si no alcanza, lanza una excepción propia (`StockInsuficienteException`) y, en `PRODUCTION`, el evento queda en el log. Al confirmar, ofrece descargar el remito en PDF.
-- **Listar inventario** (`inventario.php`): categorías y cantidades actuales.
-- **Historial de logs** (`logs.php`): eventos registrados en `sistema_error.log`, del más reciente al más antiguo.
-- **Remito en PDF** (`remito.php`): generado con DomPDF a partir del número de remito.
+- **Registrar ingreso:** sumar stock a un insumo o cargar uno nuevo, indicando quién lo donó.
+- **Registrar despacho:** descuenta stock. Si se pide más de lo que hay, no deja hacerlo y avisa. Después de un despacho se puede descargar el remito en PDF.
+- **Inventario:** lista lo que hay y cuánto.
+- **Historial de logs:** muestra los errores guardados.
 
-## Limitaciones conocidas
+## Posibles mejoras
 
-- Cada despacho incluye un solo insumo desde la interfaz. El modelo de datos (`detalle_despachos`) ya admite varios por despacho.
-- Los donantes se cargan directamente en la base de datos, ya que el enunciado no pide una pantalla para gestionarlos.
+- Permitir cargar varios insumos en un mismo despacho. La base de datos ya lo soporta (tabla `detalle_despachos`), solo habría que adaptar el formulario.
+- Agregar una pantalla para gestionar los donantes, que hoy se cargan directo en la base de datos.
